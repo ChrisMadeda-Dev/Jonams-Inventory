@@ -22,8 +22,6 @@ import {
   Timestamp,
 } from "firebase/firestore";
 
-import { getApp } from "firebase/app";
-
 /**
  * A functional component for the main dashboard page.
  * It provides a central hub for navigating the application and viewing key metrics.
@@ -38,8 +36,12 @@ export default function Dashboard() {
     itemsSold: 0,
     totalProfit: 0,
   });
-  const [dailySales, setDailySales] = useState({});
+  const [dailySales, setDailySales] = useState([]);
   const [error, setError] = useState(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3;
 
   useEffect(() => {
     if (!auth || !db) {
@@ -75,10 +77,15 @@ export default function Dashboard() {
           }
         );
 
-        // Calculate the date for one month ago
+        // Calculate the date for one month ago (for total stats)
         const oneMonthAgo = new Date();
         oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
         const startDateTimestamp = Timestamp.fromDate(oneMonthAgo);
+
+        // Calculate the date for two days ago (for daily list)
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+        const dailyListDateTimestamp = Timestamp.fromDate(twoDaysAgo);
 
         // Listener for all sales data from the last 30 days
         const salesQuery = query(
@@ -100,9 +107,12 @@ export default function Dashboard() {
               itemsSold += sale.quantity || 0;
               totalProfit += sale.profit || 0;
 
-              // Aggregate daily sales
+              // Aggregate daily sales only for the last 2 days
               const saleDate = sale.saleDate;
-              if (saleDate) {
+              if (
+                saleDate &&
+                saleDate.toDate() >= dailyListDateTimestamp.toDate()
+              ) {
                 const dateString = saleDate
                   .toDate()
                   .toISOString()
@@ -112,12 +122,18 @@ export default function Dashboard() {
               }
             });
 
+            // Sort the daily sales data by date, descending
+            const sortedDailySales = Object.entries(dailySalesMap).sort(
+              ([dateA], [dateB]) => new Date(dateB) - new Date(dateA)
+            );
+
             setSalesStats({
               totalSales: totalRevenue,
               itemsSold: itemsSold,
               totalProfit: totalProfit,
             });
-            setDailySales(dailySalesMap);
+            // Update the state with the sorted array
+            setDailySales(sortedDailySales);
           },
           (err) => {
             console.error("Error fetching sales data:", err);
@@ -139,6 +155,20 @@ export default function Dashboard() {
 
     return () => unsubscribeAuth();
   }, []);
+
+  // Pagination logic
+  const totalPages = Math.ceil(lowStockItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = lowStockItems.slice(startIndex, endIndex);
+
+  const handleNextPage = () => {
+    setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
+  };
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prevPage) => Math.max(prevPage - 1, 1));
+  };
 
   if (error) {
     return (
@@ -169,7 +199,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex flex-col justify-center items-center p-8 bg-gray-50 md:min-h-[svh] font-sans">
+    <div className="flex flex-col justify-center items-center p-8 bg-gray-50 md:min-h-[90svh] font-sans">
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -209,7 +239,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Low Stock Alerts Section */}
           <motion.div
-            className="bg-white p-6 rounded-2xl shadow-xl border border-gray-200"
+            // FIX 1: Add 'relative' to allow absolute positioning of children.
+            // FIX 2: Adjust padding to create space for the fixed pagination.
+            className="bg-white px-6 pt-6 pb-20 rounded-2xl shadow-xl border border-gray-200 relative"
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -218,22 +250,48 @@ export default function Dashboard() {
               <AlertTriangle className="text-yellow-500 w-6 h-6 mr-2" />
               Low Stock Alerts
             </h2>
+            {/* Conditional rendering for low stock items with pagination */}
             {lowStockItems.length > 0 ? (
-              <ul className="space-y-4">
-                {lowStockItems.map((item) => (
-                  <li
-                    key={item.id}
-                    className="bg-yellow-50 p-4 rounded-xl flex justify-between items-center border border-yellow-200"
-                  >
-                    <span className="font-medium text-gray-700">
-                      {item.name}
+              <>
+                <ul className="space-y-4">
+                  {paginatedItems.map((item) => (
+                    <li
+                      key={item.id}
+                      className="bg-yellow-50 p-4 rounded-xl flex justify-between items-center border border-yellow-200"
+                    >
+                      <span className="font-medium text-gray-700">
+                        {item.name}
+                      </span>
+                      <span className="text-sm font-semibold text-yellow-800">
+                        {item.quantity || 0} in stock
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {/* Pagination Controls */}
+                {lowStockItems.length > itemsPerPage && (
+                  // FIX 3: Use absolute positioning to fix the div to the bottom.
+                  <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-between items-center bg-white border-t border-gray-200">
+                    <button
+                      onClick={handlePreviousPage}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 text-sm font-semibold rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-sm font-medium text-gray-600">
+                      Page {currentPage} of {totalPages}
                     </span>
-                    <span className="text-sm font-semibold text-yellow-800">
-                      {item.quantity || 0} in stock
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                    <button
+                      onClick={handleNextPage}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 text-sm font-semibold rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center text-gray-500">
                 <p>All items are sufficiently stocked. 😊</p>
@@ -279,14 +337,14 @@ export default function Dashboard() {
             </div>
 
             {/* Daily Sales Chart Placeholder */}
-            {Object.keys(dailySales).length > 0 && (
+            {dailySales.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
                   <TrendingUp className="text-cyan-500 w-5 h-5 mr-2" /> Daily
-                  Sales
+                  Sales (Last 2 Days)
                 </h3>
                 <ul className="space-y-2">
-                  {Object.entries(dailySales).map(([date, sales]) => (
+                  {dailySales.map(([date, sales]) => (
                     <li
                       key={date}
                       className="flex justify-between items-center bg-gray-50 p-3 rounded-md"

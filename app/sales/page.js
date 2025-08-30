@@ -720,7 +720,7 @@ export default function Sales() {
                   className="px-4 py-2 bg-red-500 text-white rounded-full text-sm font-semibold hover:bg-red-600 transition-colors flex items-center space-x-1"
                 >
                   <Trash2 size={16} />
-                  <span>Clear All Today's Sales</span>
+                  <span>Clear All Today&apos;s Sales</span>
                 </button>
               </div>
             </div>

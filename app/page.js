@@ -1,103 +1,80 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { useState, useEffect } from "react";
+// The 'next/navigation' import is causing issues in this environment.
+// For self-contained code, we'll use a standard window.location.href approach
+// instead of Next.js-specific routing.
+// import { useRouter } from "next/navigation";
+import { initializeApp } from "firebase/app";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { Loader2 } from "lucide-react";
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+/**
+ * The root page of the application, responsible for checking the user's
+ * authentication status and redirecting them to the correct page.
+ *
+ * It displays a loading spinner while waiting for the authentication state to be
+ * determined, ensuring a smooth user experience without a content "flicker."
+ */
+export default function HomePage() {
+  // const router = useRouter(); // No longer needed
+  const [loading, setLoading] = useState(true);
+  const [firebaseReady, setFirebaseReady] = useState(false);
+
+  useEffect(() => {
+    try {
+      // Your Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyAlPtH62gJesPafo4Tctv_fpyA174YgaAc",
+        authDomain: "joandmel-inventory.firebaseapp.com",
+        projectId: "joandmel-inventory",
+        storageBucket: "joandmel-inventory.firebasestorage.app",
+        messagingSenderId: "710541496722",
+        appId: "1:710541496722:web:82d8b0353dc6e3bdcdb14b",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      setFirebaseReady(true);
+
+      // Listener to check the authentication state
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // User is signed in, redirect to the dashboard
+          console.log("User is authenticated. Redirecting to /dashboard.");
+          // Use a standard location redirect
+          window.location.href = "/dashboard";
+        } else {
+          // User is not signed in, redirect to the authentication page
+          console.log("No user authenticated. Redirecting to /auth.");
+          // Use a standard location redirect
+          window.location.href = "/auth";
+        }
+        setLoading(false);
+      });
+
+      // Cleanup the listener when the component unmounts
+      return () => unsubscribe();
+    } catch (e) {
+      console.error("Firebase initialization failed:", e);
+      setLoading(false);
+    }
+  }, []); // Removed router from dependencies, as it's no longer used
+
+  // Display a loading indicator while the authentication check is in progress
+  if (loading || !firebaseReady) {
+    return (
+      <main className="h-[100vh] flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          <p className="mt-4 text-gray-600 font-serif">
+            Checking authentication...
+          </p>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    );
+  }
+
+  // This part of the component will be unreachable due to the redirects in useEffect
+  return null;
 }

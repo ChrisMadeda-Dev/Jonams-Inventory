@@ -1,12 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   PlusCircle,
   ShoppingBag,
   ArrowRight,
   UserCheck,
-  Search,
   XCircle,
   Trash2,
   CheckCircle,
@@ -31,6 +30,7 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth, db } from "@/firebase/firebase.client";
+import StocksTable from "./_components/StocksTable";
 
 // Custom Alert Modal Component
 const AlertModal = ({ show, title, message, onClose }) => {
@@ -247,277 +247,6 @@ const AddNewItemForm = ({ onClose, showAlert, categories, db, userId }) => {
         Add Item
       </button>
     </form>
-  );
-};
-
-// Update Item Modal
-const UpdateModal = ({ item, onClose, onUpdate, categories }) => {
-  const [formData, setFormData] = useState({
-    name: item.name,
-    category: item.category,
-    quantity: item.quantity,
-    buyingPrice: item.buyingPrice,
-    sellingPrice: item.sellingPrice,
-  });
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onUpdate(item.id, formData);
-    onClose();
-  };
-  return (
-    <motion.div
-      className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50 font-sans"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-    >
-      <motion.div
-        className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 font-sans">
-            Update Item
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <XCircle size={28} />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 font-sans">
-              Name
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 font-sans"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 font-sans">
-              Category
-            </label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 font-sans"
-              required
-            >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.name}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 font-sans">
-              Quantity
-            </label>
-            <input
-              type="number"
-              name="quantity"
-              value={formData.quantity}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 font-sans"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 font-sans">
-              Buying Price
-            </label>
-            <input
-              type="number"
-              name="buyingPrice"
-              value={formData.buyingPrice}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 font-sans"
-              step="0.01"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 font-sans">
-              Selling Price
-            </label>
-            <input
-              type="number"
-              name="sellingPrice"
-              value={formData.sellingPrice}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 font-sans"
-              step="0.01"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-orange-700 hover:bg-orange-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors font-sans"
-          >
-            <CheckCircle className="mr-2" size={20} /> Update
-          </button>
-        </form>
-      </motion.div>
-    </motion.div>
-  );
-};
-
-// Component to display stock items in a table view with a search function.
-const Stocks = ({ user, onUpdate, onDelete }) => {
-  const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedItem, setSelectedItem] = useState(null);
-
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-    const unsubscribeItems = onSnapshot(
-      collection(db, "users", user.uid, "items"),
-      (snapshot) => {
-        const itemsData = [];
-        snapshot.docs.forEach((doc) => {
-          itemsData.push({ id: doc.id, ...doc.data() });
-        });
-        setItems(itemsData);
-      },
-      (error) => {
-        console.error("Error fetching items:", error);
-      }
-    );
-    const unsubscribeCategories = onSnapshot(
-      collection(db, "users", user.uid, "categories"),
-      (snapshot) => {
-        const cats = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setCategories(cats);
-      },
-      (error) => {
-        console.error("Error fetching categories:", error);
-      }
-    );
-    return () => {
-      unsubscribeItems();
-      unsubscribeCategories();
-    };
-  }, [user]);
-
-  const filteredStocks = items.filter((stock) =>
-    stock.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  return (
-    <>
-      <div className="relative w-full mb-6">
-        <input
-          type="text"
-          placeholder="Search for an item..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-sans"
-        />
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-      </div>
-      <div className="w-full overflow-x-auto shadow-lg rounded-xl">
-        <table className="min-w-full bg-white rounded-xl">
-          <thead>
-            <tr className="border-b border-gray-200">
-              <th className="py-3 px-4 text-left font-semibold text-gray-600 uppercase tracking-wider font-sans">
-                Product Name
-              </th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-600 uppercase tracking-wider font-sans">
-                Category
-              </th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-600 uppercase tracking-wider font-sans">
-                Current Stock
-              </th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-600 uppercase tracking-wider font-sans">
-                Buying Price
-              </th>
-              <th className="py-3 px-4 text-left font-semibold text-gray-600 uppercase tracking-wider font-sans">
-                Selling Price
-              </th>
-              <th className="py-3 px-4 text-center font-semibold text-gray-600 uppercase tracking-wider font-sans">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <AnimatePresence>
-              {filteredStocks.map((stock) => (
-                <motion.tr
-                  key={stock.id}
-                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                >
-                  <td className="py-3 px-4 text-gray-800 font-medium font-sans">
-                    {stock.name}
-                  </td>
-                  <td className="py-3 px-4 text-gray-600 font-sans">
-                    {stock.category}
-                  </td>
-                  <td className="py-3 px-4 text-gray-600 font-sans">
-                    {stock.quantity}
-                  </td>
-                  <td className="py-3 px-4 text-red-600 font-bold font-sans">
-                    Kes: {stock.buyingPrice}
-                  </td>
-                  <td className="py-3 px-4 text-green-600 font-bold font-sans">
-                    Kes: {stock.sellingPrice}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <button
-                      onClick={() => setSelectedItem(stock)}
-                      className="px-4 py-2 bg-orange-500 text-white rounded-lg shadow-sm hover:bg-orange-400 transition-colors font-sans mr-2"
-                    >
-                      Update
-                    </button>
-                    <button
-                      onClick={() => onDelete(stock.id, stock.name)}
-                      className="p-2 bg-red-600 text-white rounded-lg shadow-sm hover:bg-red-700 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </td>
-                </motion.tr>
-              ))}
-            </AnimatePresence>
-          </tbody>
-        </table>
-      </div>
-      <AnimatePresence>
-        {selectedItem && (
-          <UpdateModal
-            item={selectedItem}
-            onClose={() => setSelectedItem(null)}
-            onUpdate={onUpdate}
-            categories={categories}
-          />
-        )}
-      </AnimatePresence>
-    </>
   );
 };
 
@@ -778,7 +507,7 @@ const App = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-start p-4 font-sans">
       <div className="bg-white p-6 sm:p-8 rounded-xl w-full max-w-7xl transform transition-all duration-500 shadow-2xl">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-700 font-sans">
+          <h1 className="text-2xl sm:text-3xl font-bold text-blue-700 font-sans">
             Inventory Manager
           </h1>
           <div className="flex items-center space-x-2">
@@ -812,7 +541,7 @@ const App = () => {
           </button>
         </div>
 
-        <Stocks
+        <StocksTable
           user={user}
           onUpdate={handleUpdateItem}
           onDelete={handleDeleteItem}

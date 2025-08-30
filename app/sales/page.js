@@ -626,10 +626,10 @@ export default function Sales() {
           )}
 
           <div className="w-full max-w-5xl text-center mb-10">
-            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
-              Jonams Sales Dashboard
+            <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-2">
+              Sales Dashboard
             </h1>
-            <p className="text-gray-600 mb-6 text-lg">
+            <p className="text-gray-600 mb-6 md:text-lg text-sm ">
               A quick look at your sales performance for today.
             </p>
             <button
@@ -712,7 +712,7 @@ export default function Sales() {
             <div className="border-t border-gray-300 my-6"></div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
               <h2 className="text-2xl font-bold text-gray-900">
-                Individual Daily Sales Records
+                Daily Sales Records
               </h2>
               <div className="flex space-x-2">
                 <button

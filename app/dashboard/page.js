@@ -314,14 +314,14 @@ export default function Dashboard() {
               {/* Total Sales Card */}
               <div className="bg-blue-50 p-4 rounded-xl text-center border border-blue-200">
                 <p className="text-sm text-blue-800 font-medium">Total Sales</p>
-                <p className="text-2xl font-bold text-blue-900 mt-1">
+                <p className="text-xl font-bold text-blue-900 mt-1">
                   KSh{salesStats.totalSales.toFixed(2)}
                 </p>
               </div>
               {/* Items Sold Card */}
               <div className="bg-blue-50 p-4 rounded-xl text-center border border-blue-200">
                 <p className="text-sm text-blue-800 font-medium">Items Sold</p>
-                <p className="text-2xl font-bold text-blue-900 mt-1">
+                <p className="text-xl font-bold text-blue-900 mt-1">
                   {salesStats.itemsSold}
                 </p>
               </div>
@@ -330,7 +330,7 @@ export default function Dashboard() {
                 <p className="text-sm text-green-800 font-medium">
                   Total Profit
                 </p>
-                <p className="text-2xl font-bold text-green-900 mt-1">
+                <p className="text-xl font-bold text-green-900 mt-1">
                   KSh{salesStats.totalProfit.toFixed(2)}
                 </p>
               </div>
